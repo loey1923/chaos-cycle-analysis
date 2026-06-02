@@ -57,7 +57,11 @@ def main():
             cycles = cycle_decomposition(perm)
             order = permutation_order(cycles)
             orders.append(math.log(order) if order > 0 else 0.0)
-        fy_records.append({"N": N, "avg_ln_order": np.mean(orders)})
+        fy_records.append({
+            "N": N,
+            "avg_ln_order": float(np.mean(orders)),
+            "std_ln_order": float(np.std(orders)),
+        })
 
     fy_df = pd.DataFrame(fy_records)
     fy_df.insert(0, "mapping", "Fisher-Yates")

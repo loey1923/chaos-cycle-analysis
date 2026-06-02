@@ -3,10 +3,9 @@ import numpy as np
 
 
 def generate_permutation(seq: np.ndarray) -> np.ndarray:
-    perm = np.argsort(seq)
-    if set(perm) != set(range(len(perm))):
-        raise ValueError("Generated permutation is not a bijection")
-    return perm
+    if not np.all(np.isfinite(seq)):
+        raise ValueError("Sequence contains NaN or Inf; map may have diverged")
+    return np.argsort(seq)
 
 
 def cycle_decomposition(perm: np.ndarray) -> dict[int, int]:

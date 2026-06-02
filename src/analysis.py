@@ -18,6 +18,9 @@ def _single_run(args):
     else:
         seq = map_func(seed_pair[0], N, **params)
 
+    if not np.all(np.isfinite(seq)):
+        return None
+
     perm = generate_permutation(seq)
     cycles = cycle_decomposition(perm)
     order = permutation_order(cycles)
@@ -35,28 +38,45 @@ def _single_run(args):
     return ln_order, max_cycle_ratio, total_cycles, fixed_point_ratio, short_cycle_ratio
 
 
+def _make_seed(map_func):
+    if map_func is chebyshev:
+        return random.random() * 2.0 - 1.0, 0
+    elif map_func is henon:
+        return (random.uniform(-1.5, 1.5), random.uniform(-0.5, 0.5)), None
+    else:
+        return random.random(), 0
+
+
 def batch_avg_ln_order(map_func, params, N_list, num_seeds, warmup=1000):
     records = []
     for N in N_list:
-        seeds = []
-        for _ in range(num_seeds):
-            sx = random.random() * 2.0 - 1.0 if map_func is chebyshev else \
-                 (random.uniform(-1.5, 1.5), random.uniform(-0.5, 0.5)) if map_func is henon else \
-                 random.random()
-            if map_func is henon:
-                seeds.append((sx[0], sx[1]))
-            else:
-                seeds.append((sx, 0))
+        valid = []
+        attempts = 0
+        max_attempts = num_seeds * 5
+        while len(valid) < num_seeds and attempts < max_attempts:
+            batch_size = num_seeds - len(valid)
+            seeds = []
+            for _ in range(batch_size):
+                seed_val, _ = _make_seed(map_func)
+                if map_func is henon:
+                    seeds.append(seed_val)
+                else:
+                    seeds.append((seed_val, 0))
+            args_list = [(map_func, params, N, s) for s in seeds]
+            with ProcessPoolExecutor() as ex:
+                batch_results = list(ex.map(_single_run, args_list))
+            valid.extend(r for r in batch_results if r is not None)
+            attempts += batch_size
 
-        args_list = [(map_func, params, N, s) for s in seeds]
-        with ProcessPoolExecutor() as ex:
-            results = list(ex.map(_single_run, args_list))
+        if len(valid) < num_seeds:
+            raise RuntimeError(f"Only got {len(valid)}/{num_seeds} valid samples for N={N} after {max_attempts} attempts")
 
-        ln_orders = [r[0] for r in results]
-        max_ratios = [r[1] for r in results]
-        cycle_counts = [r[2] for r in results]
-        fixed_ratios = [r[3] for r in results]
-        short_ratios = [r[4] for r in results]
+        valid = valid[:num_seeds]
+        ln_orders = [r[0] for r in valid]
+        max_ratios = [r[1] for r in valid]
+        cycle_counts = [r[2] for r in valid]
+        fixed_ratios = [r[3] for r in valid]
+        short_ratios = [r[4] for r in valid]
 
         records.append({
             "N": N,
@@ -75,6 +95,9 @@ def landau_ln_order(N: np.ndarray) -> np.ndarray:
 
 
 def golomb_dickman_max_cycle(N: np.ndarray) -> np.ndarray:
+    # Golomb-Dickman constant λ ≈ 0.6243.
+    # Reference: Shepp L A, Lloyd S P. Ordered cycle lengths in a
+    # random permutation. Transactions of the AMS, 1966.
     return 0.6243 * N
 
 
@@ -175,7 +198,10 @@ def sorting_bias_experiment(N, num_seeds):
     ]
 
     for name, map_func, params in map_configs:
-        for _ in range(num_seeds):
+        collected = 0
+        attempts = 0
+        while collected < num_seeds and attempts < num_seeds * 10:
+            attempts += 1
             if map_func is henon:
                 sx, sy = random.uniform(-1.5, 1.5), random.uniform(-0.5, 0.5)
                 seq = map_func(sx, sy, N, **params)
@@ -184,6 +210,9 @@ def sorting_bias_experiment(N, num_seeds):
                 if map_func is chebyshev:
                     seed = random.uniform(-1, 1)
                 seq = map_func(seed, N, **params)
+            if not np.all(np.isfinite(seq)):
+                continue
+            collected += 1
             perm = generate_permutation(seq)
             cycles = cycle_decomposition(perm)
             order = permutation_order(cycles)
