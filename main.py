@@ -44,14 +44,6 @@ def main():
         results[name] = df
         df.insert(0, "mapping", name)
         all_records.append(df)
-    pd.concat(all_records, ignore_index=True).to_csv(
-        os.path.join(DATA_DIR, "avg_ln_order.csv"), index=False
-    )
-
-    landau_ref = pd.DataFrame({
-        "N": N_LIST,
-        "ln_order": landau_ln_order(np.array(N_LIST, dtype=float)),
-    })
 
     fy_records = []
     for N in N_LIST:
@@ -66,7 +58,20 @@ def main():
             order = permutation_order(cycles)
             orders.append(math.log(order) if order > 0 else 0.0)
         fy_records.append({"N": N, "avg_ln_order": np.mean(orders)})
-    fisher_yates_ref = pd.DataFrame(fy_records)
+
+    fy_df = pd.DataFrame(fy_records)
+    fy_df.insert(0, "mapping", "Fisher-Yates")
+    all_records.append(fy_df)
+    pd.concat(all_records, ignore_index=True).to_csv(
+        os.path.join(DATA_DIR, "avg_ln_order.csv"), index=False
+    )
+
+    landau_ref = pd.DataFrame({
+        "N": N_LIST,
+        "ln_order": landau_ln_order(np.array(N_LIST, dtype=float)),
+    })
+
+    fisher_yates_ref = fy_df
 
     print("[2/8] Generating fig1 (avg ln order) ...")
     fig1_avg_ln_order(results, landau_ref, fisher_yates_ref,
@@ -137,22 +142,30 @@ def main():
             safety_records.append({"mapping": name, "metric": "Q2_DiffRate", "value": av_row.iloc[0]["diff_rate"]})
             safety_records.append({"mapping": name, "metric": "Q2_Footrule", "value": av_row.iloc[0]["footrule"]})
 
-    for name in MAP_CONFIGS:
-        sub = precision_df[(precision_df["mapping"] == name) & (precision_df["N"] == 256)]
-        if not sub.empty:
-            f32 = sub[sub["precision"] == "float32"]["ln_order"].mean()
-            dec = sub[sub["precision"] == "Decimal(50)"]["ln_order"].mean()
+        sub_prec = precision_df[(precision_df["mapping"] == name) & (precision_df["N"] == 256)]
+        if not sub_prec.empty:
+            f32 = sub_prec[sub_prec["precision"] == "float32"]["ln_order"].mean()
+            dec = sub_prec[sub_prec["precision"] == "Decimal(50)"]["ln_order"].mean()
             deg = (dec - f32) / dec if dec > 0 else 0
             safety_records.append({"mapping": name, "metric": "Q4_Degradation", "value": deg})
 
-    for name in MAP_CONFIGS:
-        sub = sorting_df[sorting_df["group"] == f"Chaos-{name}"]
-        fy = sorting_df[sorting_df["group"] == "Fisher-Yates"]
-        if not sub.empty and not fy.empty:
-            lr = sub["max_cycle_ratio"].mean() / fy["max_cycle_ratio"].mean() if fy["max_cycle_ratio"].mean() > 0 else 1
+        sub_sort = sorting_df[sorting_df["group"] == f"Chaos-{name}"]
+        fy_row = sorting_df[sorting_df["group"] == "Fisher-Yates"]
+        if not sub_sort.empty and not fy_row.empty:
+            fy_ln = fy_row["ln_order"].mean()
+            chaos_ln = sub_sort["ln_order"].mean()
+            q3 = chaos_ln / fy_ln if fy_ln > 0 else 1
+            safety_records.append({"mapping": name, "metric": "Q3_SortBias", "value": q3})
+
+            lr = sub_sort["max_cycle_ratio"].mean() / fy_row["max_cycle_ratio"].mean() if fy_row["max_cycle_ratio"].mean() > 0 else 1
             safety_records.append({"mapping": name, "metric": "Q8_MaxCycleRatio", "value": lr})
-            cc = sub["cycle_count"].mean() / math.log(1024)
+            cc = sub_sort["cycle_count"].mean() / math.log(1024)
             safety_records.append({"mapping": name, "metric": "Q9_CycleCount_norm", "value": cc})
+
+        row = results[name].set_index("N")
+        if 1024 in row.index:
+            safety_records.append({"mapping": name, "metric": "Q6_ShortCycle", "value": row.loc[1024, "avg_short_cycle_ratio"]})
+            safety_records.append({"mapping": name, "metric": "Q7_FixedPoint", "value": row.loc[1024, "avg_fixed_point_ratio"]})
 
     safety_df = pd.DataFrame(safety_records)
     fig6_summary_metrics(safety_df,

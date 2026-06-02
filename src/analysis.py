@@ -27,7 +27,12 @@ def _single_run(args):
     max_cycle_ratio = max_cycle_len / N if N > 0 else 0.0
     total_cycles = sum(cycles.values())
 
-    return ln_order, max_cycle_ratio, total_cycles
+    fixed_point_count = cycles.get(1, 0)
+    fixed_point_ratio = fixed_point_count / N if N > 0 else 0.0
+    short_count = sum(c for length, c in cycles.items() if length <= 3)
+    short_cycle_ratio = short_count / N if N > 0 else 0.0
+
+    return ln_order, max_cycle_ratio, total_cycles, fixed_point_ratio, short_cycle_ratio
 
 
 def batch_avg_ln_order(map_func, params, N_list, num_seeds, warmup=1000):
@@ -50,6 +55,8 @@ def batch_avg_ln_order(map_func, params, N_list, num_seeds, warmup=1000):
         ln_orders = [r[0] for r in results]
         max_ratios = [r[1] for r in results]
         cycle_counts = [r[2] for r in results]
+        fixed_ratios = [r[3] for r in results]
+        short_ratios = [r[4] for r in results]
 
         records.append({
             "N": N,
@@ -57,6 +64,8 @@ def batch_avg_ln_order(map_func, params, N_list, num_seeds, warmup=1000):
             "std_ln_order": float(np.std(ln_orders)),
             "avg_max_cycle_ratio": float(np.mean(max_ratios)),
             "avg_cycle_count": float(np.mean(cycle_counts)),
+            "avg_fixed_point_ratio": float(np.mean(fixed_ratios)),
+            "avg_short_cycle_ratio": float(np.mean(short_ratios)),
         })
     return pd.DataFrame(records)
 
