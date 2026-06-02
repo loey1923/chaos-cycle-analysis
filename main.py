@@ -9,10 +9,12 @@ from src.permutation import generate_permutation, cycle_decomposition, permutati
 from src.analysis import (
     batch_avg_ln_order, landau_ln_order, golomb_dickman_max_cycle,
     seed_avalanche, precision_comparison, sorting_bias_experiment,
+    logistic_param_scan,
 )
 from src.visualize import (
     fig1_avg_ln_order, fig2_cycle_distribution, fig3_seed_avalanche,
     fig4_precision_degradation, fig5_sorting_bias, fig6_summary_metrics,
+    fig_param_scan_logistic,
 )
 
 DATA_DIR = "data"
@@ -36,7 +38,7 @@ def main():
     random.seed(42)
     np.random.seed(42)
 
-    print("[1/8] Running batch_avg_ln_order ...")
+    print("[1/9] Running batch_avg_ln_order ...")
     results = {}
     all_records = []
     for name, (func, params) in MAP_CONFIGS.items():
@@ -77,11 +79,11 @@ def main():
 
     fisher_yates_ref = fy_df
 
-    print("[2/8] Generating fig1 (avg ln order) ...")
+    print("[2/9] Generating fig1 (avg ln order) ...")
     fig1_avg_ln_order(results, landau_ref, fisher_yates_ref,
                       os.path.join(FIGURES_DIR, "fig1_avg_ln_order.png"))
 
-    print("[3/8] Generating fig2 (cycle distribution) ...")
+    print("[3/9] Generating fig2 (cycle distribution) ...")
     all_perms = {}
     for name, (func, params) in MAP_CONFIGS.items():
         if func is henon:
@@ -95,7 +97,7 @@ def main():
     fig2_cycle_distribution(all_perms, 1024,
                             os.path.join(FIGURES_DIR, "fig2_cycle_distribution.png"))
 
-    print("[4/8] Running seed_avalanche ...")
+    print("[4/9] Running seed_avalanche ...")
     avalanche_records = []
     for name, (func, params) in MAP_CONFIGS.items():
         seed = (-0.5, 0.2) if func is henon else (0.3 if func is chebyshev else 0.3)
@@ -107,7 +109,7 @@ def main():
     fig3_seed_avalanche(avalanche_df,
                         os.path.join(FIGURES_DIR, "fig3_seed_avalanche.png"))
 
-    print("[5/8] Running precision comparison ...")
+    print("[5/9] Running precision comparison ...")
     precision_records = []
     for name in ["Logistic", "Tent", "Sine"]:
         func, params = MAP_CONFIGS[name]
@@ -127,13 +129,19 @@ def main():
     fig4_precision_degradation(precision_df,
                                os.path.join(FIGURES_DIR, "fig4_precision_degradation.png"))
 
-    print("[6/8] Running sorting bias experiment ...")
+    print("[6/9] Running sorting bias experiment ...")
     sorting_df = sorting_bias_experiment(1024, 60)
     sorting_df.to_csv(os.path.join(DATA_DIR, "sorting_bias.csv"), index=False)
     fig5_sorting_bias(sorting_df,
                       os.path.join(FIGURES_DIR, "fig5_sorting_bias.png"))
 
-    print("[7/8] Generating fig6 (summary metrics) ...")
+    print("[7/9] Running logistic parameter scan (E4) ...")
+    param_scan_df = logistic_param_scan(N=1024, num_seeds=30)
+    param_scan_df.to_csv(os.path.join(DATA_DIR, "param_scan_logistic.csv"), index=False)
+    fig_param_scan_logistic(param_scan_df,
+                            os.path.join(FIGURES_DIR, "fig_param_scan_logistic.png"))
+
+    print("[8/9] Generating fig6 (summary metrics) ...")
     safety_records = []
     for name in MAP_CONFIGS:
         avg_ln = results[name].set_index("N")["avg_ln_order"]
@@ -175,7 +183,7 @@ def main():
     fig6_summary_metrics(safety_df,
                          os.path.join(FIGURES_DIR, "fig6_summary_metrics.png"))
 
-    print("[8/8] Done. All figures saved to figures/, data to data/.")
+    print("[9/9] Done. All figures saved to figures/, data to data/.")
 
 
 if __name__ == "__main__":

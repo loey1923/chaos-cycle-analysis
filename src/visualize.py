@@ -86,6 +86,31 @@ def fig5_sorting_bias(sorting_df: pd.DataFrame, output_path: str):
     plt.close(fig)
 
 
+def fig_param_scan_logistic(scan_df: pd.DataFrame, output_path: str):
+    known_windows = [
+        (3.828, "Period-3"),
+        (3.739, "Period-5"),
+        (3.63, "Period-6"),
+        (3.702, "Period-7"),
+    ]
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(scan_df["mu"], scan_df["avg_ln_order"], "-", color="steelblue", linewidth=1)
+    ax.fill_between(scan_df["mu"],
+                    scan_df["avg_ln_order"] - scan_df["std_ln_order"],
+                    scan_df["avg_ln_order"] + scan_df["std_ln_order"],
+                    alpha=0.15, color="steelblue")
+    for x, label in known_windows:
+        y = scan_df.loc[(scan_df["mu"] - x).abs().idxmin(), "avg_ln_order"]
+        ax.annotate(label, xy=(x, y), xytext=(x + 0.02, y - 1),
+                    arrowprops=dict(arrowstyle="->", color="gray"), fontsize=8)
+    ax.set_xlabel("μ")
+    ax.set_ylabel("E[ln(order)]")
+    ax.set_title("Logistic parameter scan — E[ln(order)] vs μ (N=1024)")
+    fig.tight_layout()
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+
+
 def fig6_summary_metrics(safety_df: pd.DataFrame, output_path: str):
     fig, ax = plt.subplots(figsize=(8, 6))
     if safety_df.empty:

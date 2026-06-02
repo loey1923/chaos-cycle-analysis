@@ -90,6 +90,23 @@ def batch_avg_ln_order(map_func, params, N_list, num_seeds, warmup=1000):
     return pd.DataFrame(records)
 
 
+def logistic_param_scan(N=1024, num_seeds=30, mu_min=3.6, mu_max=4.0, mu_step=0.01):
+    records = []
+    mu_vals = np.arange(mu_min, mu_max + mu_step / 2, mu_step)
+    for mu in mu_vals:
+        params = {"mu": mu}
+        df = batch_avg_ln_order(logistic, params, [N], num_seeds)
+        row = df.iloc[0]
+        records.append({
+            "mu": round(mu, 4),
+            "avg_ln_order": row["avg_ln_order"],
+            "std_ln_order": row["std_ln_order"],
+            "avg_max_cycle_ratio": row["avg_max_cycle_ratio"],
+            "avg_cycle_count": row["avg_cycle_count"],
+        })
+    return pd.DataFrame(records)
+
+
 def landau_ln_order(N: np.ndarray) -> np.ndarray:
     return np.sqrt(N * np.log(N) / 2.0)
 
