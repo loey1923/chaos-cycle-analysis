@@ -11,7 +11,6 @@ from src.permutation import generate_permutation, cycle_decomposition, permutati
 
 def _single_run(args):
     map_func, params, N, seed_pair = args
-    rng = random.Random(seed_pair[0])
 
     if map_func is henon:
         sx, sy = seed_pair
