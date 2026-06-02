@@ -2,9 +2,10 @@ import math
 import random
 import numpy as np
 import pandas as pd
+from decimal import Decimal, getcontext
 from concurrent.futures import ProcessPoolExecutor
 
-from src.maps import logistic, tent, chebyshev, cubic, henon, WARMUP
+from src.maps import logistic, tent, chebyshev, sine, henon, WARMUP
 from src.permutation import generate_permutation, cycle_decomposition, permutation_order
 
 
@@ -91,18 +92,10 @@ def seed_avalanche(map_func, params, N, seed, eps=1e-14):
 
 def _precision_single(args):
     map_func, params, N, seed, precision = args
-    if "float32" in precision:
-        import numpy as np
-        dtype = np.float32
-    elif "float64" in precision:
-        dtype = np.float64
-    else:
-        dtype = np.float64
 
     if map_func is henon:
         seq = map_func(seed[0], seed[1], N, **params)
     elif "Decimal" in precision:
-        from decimal import Decimal, getcontext
         prec = int(precision.replace("Decimal(", "").replace(")", ""))
         getcontext().prec = prec
         x = Decimal(str(seed))
@@ -119,10 +112,12 @@ def _precision_single(args):
                 half = Decimal("0.5")
                 x = r * x if x < half else r * (1 - x)
                 xs.append(float(x))
-        elif map_func is cubic:
-            r = Decimal(str(params.get("r", 3.9)))
+        elif map_func is sine:
+            r = Decimal(str(params.get("r", 0.99)))
             for _ in range(n_total):
-                x = r * x * x * (1 - x)
+                xf = float(x)
+                sin_val = math.sin(xf * math.pi)
+                x = r * Decimal(str(sin_val))
                 xs.append(float(x))
         else:
             raise ValueError(f"Decimal unsupported for {map_func}")
@@ -160,7 +155,7 @@ def sorting_bias_experiment(N, num_seeds):
         ("Logistic", logistic, {"mu": 3.99}),
         ("Tent", tent, {"r": 1.99}),
         ("Chebyshev", chebyshev, {"k": 3}),
-        ("Cubic", cubic, {"r": 0.99}),
+        ("Sine", sine, {"r": 0.99}),
         ("Henon", henon, {"a": 1.4, "b": 0.3}),
     ]
 

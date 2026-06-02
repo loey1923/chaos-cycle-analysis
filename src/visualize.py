@@ -88,9 +88,13 @@ def fig5_sorting_bias(sorting_df: pd.DataFrame, output_path: str):
 
 def fig6_summary_metrics(safety_df: pd.DataFrame, output_path: str):
     fig, ax = plt.subplots(figsize=(8, 6))
-    pivot = safety_df.pivot_table(index="mapping", columns="metric", values="value")
-    sns.heatmap(pivot, annot=True, cmap="RdYlGn_r", center=0.5, ax=ax)
-    ax.set_title("Comprehensive safety metrics")
+    if safety_df.empty:
+        ax.text(0.5, 0.5, "No data available", ha="center", va="center", fontsize=14)
+        ax.set_title("Comprehensive safety metrics")
+    else:
+        pivot = safety_df.pivot_table(index="mapping", columns="metric", values="value")
+        sns.heatmap(pivot, annot=True, cmap="RdYlGn_r", center=0.5, ax=ax)
+        ax.set_title("Comprehensive safety metrics")
     fig.tight_layout()
     fig.savefig(output_path, dpi=150)
     plt.close(fig)

@@ -31,7 +31,7 @@ def chebyshev(seed: float, n: int, k: int = 3) -> np.ndarray:
     return xs[WARMUP:]
 
 
-def cubic(seed: float, n: int, r: float = 0.99) -> np.ndarray:
+def sine(seed: float, n: int, r: float = 0.99) -> np.ndarray:
     xs = np.empty(n + WARMUP)
     x = seed
     for i in range(n + WARMUP):

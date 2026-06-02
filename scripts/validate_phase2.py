@@ -8,7 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.maps import logistic, tent, chebyshev, cubic, henon, WARMUP
+from src.maps import logistic, tent, chebyshev, sine, henon, WARMUP
 
 FIGS = os.path.join(os.path.dirname(__file__), "..", "figures")
 os.makedirs(FIGS, exist_ok=True)
@@ -21,7 +21,7 @@ maps = [
     ("Logistic", logistic, SEED, {"mu": 3.99}),
     ("Tent", tent, SEED, {"r": 1.99}),
     ("Chebyshev", chebyshev, 0.2, {"k": 3}),
-    ("Cubic (Sine)", cubic, SEED, {"r": 0.99}),
+    ("Sine", sine, SEED, {"r": 0.99}),
     ("Henon", henon, SEED_HENON, {"a": 1.4, "b": 0.3}),
 ]
 
@@ -68,7 +68,7 @@ plt.close(fig)
 print(f"  Saved {path}")
 
 print("=== Sine/Cubic extra confirmation: orbit + histogram ===")
-seq = cubic(SEED, N)
+seq = sine(SEED, N)
 fig, axes = plt.subplots(2, 2, figsize=(12, 6))
 
 axes[0, 0].plot(seq[:500], linewidth=0.5, color="coral")

@@ -4,7 +4,7 @@ import random
 import numpy as np
 import pandas as pd
 
-from src.maps import logistic, tent, chebyshev, cubic, henon
+from src.maps import logistic, tent, chebyshev, sine, henon
 from src.permutation import generate_permutation, cycle_decomposition, permutation_order
 from src.analysis import (
     batch_avg_ln_order, landau_ln_order, golomb_dickman_max_cycle,
@@ -24,12 +24,12 @@ MAP_CONFIGS = {
     "Logistic": (logistic, {"mu": 3.99}),
     "Tent": (tent, {"r": 1.99}),
     "Chebyshev": (chebyshev, {"k": 3}),
-    "Cubic": (cubic, {"r": 0.99}),
+    "Sine": (sine, {"r": 0.99}),
     "Henon": (henon, {"a": 1.4, "b": 0.3}),
 }
 
-N_LIST = [64, 128, 256, 512, 1024, 2048]
-NUM_SEEDS = 60
+N_LIST = [64, 128, 256, 512, 1024, 2048, 4096]
+NUM_SEEDS = 100
 
 
 def main():
@@ -100,7 +100,7 @@ def main():
 
     print("[5/8] Running precision comparison ...")
     precision_records = []
-    for name in ["Logistic", "Tent", "Cubic"]:
+    for name in ["Logistic", "Tent", "Sine"]:
         func, params = MAP_CONFIGS[name]
         for N in [256, 512, 1024]:
             for _ in range(30):
@@ -125,7 +125,36 @@ def main():
                       os.path.join(FIGURES_DIR, "fig5_sorting_bias.png"))
 
     print("[7/8] Generating fig6 (summary metrics) ...")
-    safety_df = pd.DataFrame()
+    safety_records = []
+    for name in MAP_CONFIGS:
+        avg_ln = results[name].set_index("N")["avg_ln_order"]
+        landau_val = landau_ln_order(np.array([2048], dtype=float))[0]
+        ratio = avg_ln.get(2048, 0) / landau_val if landau_val > 0 else 0
+        safety_records.append({"mapping": name, "metric": "Q1_LandauRatio", "value": ratio})
+
+        av_row = avalanche_df[avalanche_df["mapping"] == name]
+        if not av_row.empty:
+            safety_records.append({"mapping": name, "metric": "Q2_DiffRate", "value": av_row.iloc[0]["diff_rate"]})
+            safety_records.append({"mapping": name, "metric": "Q2_Footrule", "value": av_row.iloc[0]["footrule"]})
+
+    for name in MAP_CONFIGS:
+        sub = precision_df[(precision_df["mapping"] == name) & (precision_df["N"] == 256)]
+        if not sub.empty:
+            f32 = sub[sub["precision"] == "float32"]["ln_order"].mean()
+            dec = sub[sub["precision"] == "Decimal(50)"]["ln_order"].mean()
+            deg = (dec - f32) / dec if dec > 0 else 0
+            safety_records.append({"mapping": name, "metric": "Q4_Degradation", "value": deg})
+
+    for name in MAP_CONFIGS:
+        sub = sorting_df[sorting_df["group"] == f"Chaos-{name}"]
+        fy = sorting_df[sorting_df["group"] == "Fisher-Yates"]
+        if not sub.empty and not fy.empty:
+            lr = sub["max_cycle_ratio"].mean() / fy["max_cycle_ratio"].mean() if fy["max_cycle_ratio"].mean() > 0 else 1
+            safety_records.append({"mapping": name, "metric": "Q8_MaxCycleRatio", "value": lr})
+            cc = sub["cycle_count"].mean() / math.log(1024)
+            safety_records.append({"mapping": name, "metric": "Q9_CycleCount_norm", "value": cc})
+
+    safety_df = pd.DataFrame(safety_records)
     fig6_summary_metrics(safety_df,
                          os.path.join(FIGURES_DIR, "fig6_summary_metrics.png"))
 
