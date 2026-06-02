@@ -43,7 +43,7 @@ All maps apply **M=1000 warmup** iterations before collecting N samples.
 | E1 | Average $\ln(\text{order})$ vs N | Compare cycle properties across maps |
 | E2 | Landau reference | $\mathbb{E}[\ln(\text{order})] \sim \sqrt{N\ln N/2}$ |
 | E3 | Seed avalanche | DiffRate + Spearman Footrule |
-| E4 | Parameter scan (optional) | Detect periodic windows |
+| E4 | Parameter scan | Detect periodic windows |
 | E5 | Cycle length distribution | N=1024, histogram per map |
 | E6 | Precision degradation | float32 vs float64 vs Decimal(50) |
 | E7 | Sorting bias | Chaos+argsort vs Random+argsort vs Fisher-Yates |

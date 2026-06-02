@@ -41,7 +41,7 @@
 | E1 | 平均阶 vs N 曲线 | 横向对比 5 种映射的循环特性 |
 | E2 | Landau 定理对照 | $\mathbb{E}[\ln(\text{order})] \sim \sqrt{N\ln N/2}$ |
 | E3 | 种子雪崩效应 | DiffRate + Spearman Footrule |
-| E4 | 参数扫描（可选） | Logistic $\mu$ 扫描，检测周期窗口 |
+| E4 | 参数扫描 | Logistic $\mu$ 扫描，检测周期窗口 |
 | E5 | 循环长度分布 | N=1024，各映射循环直方图 |
 | E6 | 有限精度退化 | float32 vs float64 vs Decimal(50) |
 | E7 | 排序偏差分析 | Chaos+argsort vs Random+argsort vs Fisher-Yates |
