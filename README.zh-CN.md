@@ -3,7 +3,7 @@
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](README.md)
 [![中文](https://img.shields.io/badge/lang-中文-red.svg)](README.zh-CN.md)
 
-**全国密码技术竞赛参赛项目**
+
 
 利用混沌映射通过 `np.argsort` 生成置乱表（置换），系统分析其循环分解结构（循环长度分布、总阶 = LCM），并结合 Landau 定理、有限精度退化效应、种子雪崩效应和排序偏差评估其密码安全性。
 
