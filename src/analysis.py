@@ -93,9 +93,14 @@ def seed_avalanche(map_func, params, N, seed, eps=1e-14):
 def _precision_single(args):
     map_func, params, N, seed, precision = args
 
-    if map_func is henon:
-        seq = map_func(seed[0], seed[1], N, **params)
-    elif "Decimal" in precision:
+    if "float32" in precision:
+        dtype = np.float32
+    elif "float64" in precision:
+        dtype = np.float64
+    else:
+        dtype = np.float64
+
+    if "Decimal" in precision:
         prec = int(precision.replace("Decimal(", "").replace(")", ""))
         getcontext().prec = prec
         x = Decimal(str(seed))
@@ -122,8 +127,10 @@ def _precision_single(args):
         else:
             raise ValueError(f"Decimal unsupported for {map_func}")
         seq = np.array(xs[WARMUP:], dtype=float)
+    elif map_func is henon:
+        seq = map_func(seed[0], seed[1], N, **params, dtype=dtype)
     else:
-        seq = map_func(seed, N, **params)
+        seq = map_func(dtype(seed), N, **params, dtype=dtype)
 
     perm = generate_permutation(seq)
     cycles = cycle_decomposition(perm)
