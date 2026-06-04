@@ -20,7 +20,7 @@ SEED_HENON = (-0.5, 0.2)
 maps = [
     ("Logistic", logistic, SEED, {"mu": 3.99}),
     ("Tent", tent, SEED, {"r": 1.99}),
-    ("Chebyshev", chebyshev, 0.2, {"k": 3}),
+    ("Chebyshev", chebyshev, 0.2, {}),
     ("Sine", sine, SEED, {"r": 0.99}),
     ("Henon", henon, SEED_HENON, {"a": 1.4, "b": 0.3}),
 ]

@@ -25,7 +25,7 @@ os.makedirs(FIGURES_DIR, exist_ok=True)
 MAP_CONFIGS = {
     "Logistic": (logistic, {"mu": 3.99}),
     "Tent": (tent, {"r": 1.99}),
-    "Chebyshev": (chebyshev, {"k": 3}),
+    "Chebyshev": (chebyshev, {}),
     "Sine": (sine, {"r": 0.99}),
     "Henon": (henon, {"a": 1.4, "b": 0.3}),
 }

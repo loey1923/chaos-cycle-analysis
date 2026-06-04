@@ -209,7 +209,7 @@ def sorting_bias_experiment(N, num_seeds):
     map_configs = [
         ("Logistic", logistic, {"mu": 3.99}),
         ("Tent", tent, {"r": 1.99}),
-        ("Chebyshev", chebyshev, {"k": 3}),
+        ("Chebyshev", chebyshev, {}),
         ("Sine", sine, {"r": 0.99}),
         ("Henon", henon, {"a": 1.4, "b": 0.3}),
     ]

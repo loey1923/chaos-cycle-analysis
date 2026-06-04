@@ -25,7 +25,8 @@ def tent(seed: float, n: int, r: float = 1.99, dtype: type = np.float64) -> np.n
     return xs[WARMUP:]
 
 
-def chebyshev(seed: float, n: int, k: int = 3, dtype: type = np.float64) -> np.ndarray:
+def chebyshev(seed: float, n: int, dtype: type = np.float64) -> np.ndarray:
+    # 固定 k=3: 最低阶非平凡 Chebyshev 映射, T_3(x) = 4x^3 - 3x
     x = dtype(seed)
     xs = np.empty(n + WARMUP, dtype=dtype)
     for i in range(n + WARMUP):
