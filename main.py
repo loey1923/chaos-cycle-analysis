@@ -89,7 +89,7 @@ def main():
         if func is henon:
             seq = func(-0.5, 0.2, 1024, **params)
         elif func is chebyshev:
-            seq = func(0.5, 1024, **params)
+            seq = func(0.2, 1024, **params)
         else:
             seq = func(0.3, 1024, **params)
         perm = generate_permutation(seq)
