@@ -100,7 +100,7 @@ def main():
     print("[4/9] Running seed_avalanche ...")
     avalanche_records = []
     for name, (func, params) in MAP_CONFIGS.items():
-        seed = (-0.5, 0.2) if func is henon else (0.3 if func is chebyshev else 0.3)
+        seed = (-0.5, 0.2) if func is henon else 0.3
         result = seed_avalanche(func, params, 1024, seed)
         result["mapping"] = name
         avalanche_records.append(result)

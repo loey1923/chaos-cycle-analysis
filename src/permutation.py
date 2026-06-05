@@ -5,7 +5,10 @@ import numpy as np
 def generate_permutation(seq: np.ndarray) -> np.ndarray:
     if not np.all(np.isfinite(seq)):
         raise ValueError("Sequence contains NaN or Inf; map may have diverged")
-    return np.argsort(seq)
+    perm = np.argsort(seq)
+    if set(perm.tolist()) != set(range(len(seq))):
+        raise ValueError("Not a valid permutation; duplicate values in sequence")
+    return perm
 
 
 def cycle_decomposition(perm: np.ndarray) -> dict[int, int]:

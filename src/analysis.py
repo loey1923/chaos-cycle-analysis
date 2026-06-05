@@ -8,6 +8,22 @@ from concurrent.futures import ProcessPoolExecutor
 from src.maps import logistic, tent, chebyshev, sine, henon, WARMUP
 from src.permutation import generate_permutation, cycle_decomposition, permutation_order
 
+DECIMAL_PI = Decimal("3.14159265358979323846264338327950288419716939937510")
+
+def _decimal_sin(z: Decimal) -> Decimal:
+    prec = getcontext().prec
+    z2 = -z * z
+    term = z
+    result = z
+    k = 1
+    while True:
+        term = term * z2 / (Decimal(2 * k) * Decimal(2 * k + 1))
+        if abs(term) < Decimal(f"1e-{prec + 2}"):
+            break
+        result += term
+        k += 1
+    return result
+
 
 def _single_run(args):
     map_func, params, N, seed_pair = args
@@ -49,44 +65,44 @@ def _make_seed(map_func):
 
 def batch_avg_ln_order(map_func, params, N_list, num_seeds, warmup=1000):
     records = []
-    for N in N_list:
-        valid = []
-        attempts = 0
-        max_attempts = num_seeds * 5
-        while len(valid) < num_seeds and attempts < max_attempts:
-            batch_size = num_seeds - len(valid)
-            seeds = []
-            for _ in range(batch_size):
-                seed_val, _ = _make_seed(map_func)
-                if map_func is henon:
-                    seeds.append(seed_val)
-                else:
-                    seeds.append((seed_val, 0))
-            args_list = [(map_func, params, N, s) for s in seeds]
-            with ProcessPoolExecutor() as ex:
+    with ProcessPoolExecutor() as ex:
+        for N in N_list:
+            valid = []
+            attempts = 0
+            max_attempts = num_seeds * 5
+            while len(valid) < num_seeds and attempts < max_attempts:
+                batch_size = num_seeds - len(valid)
+                seeds = []
+                for _ in range(batch_size):
+                    seed_val, _ = _make_seed(map_func)
+                    if map_func is henon:
+                        seeds.append(seed_val)
+                    else:
+                        seeds.append((seed_val, 0))
+                args_list = [(map_func, params, N, s) for s in seeds]
                 batch_results = list(ex.map(_single_run, args_list))
-            valid.extend(r for r in batch_results if r is not None)
-            attempts += batch_size
+                valid.extend(r for r in batch_results if r is not None)
+                attempts += batch_size
 
-        if len(valid) < num_seeds:
-            raise RuntimeError(f"Only got {len(valid)}/{num_seeds} valid samples for N={N} after {max_attempts} attempts")
+            if len(valid) < num_seeds:
+                raise RuntimeError(f"Only got {len(valid)}/{num_seeds} valid samples for N={N} after {max_attempts} attempts")
 
-        valid = valid[:num_seeds]
-        ln_orders = [r[0] for r in valid]
-        max_ratios = [r[1] for r in valid]
-        cycle_counts = [r[2] for r in valid]
-        fixed_ratios = [r[3] for r in valid]
-        short_ratios = [r[4] for r in valid]
+            valid = valid[:num_seeds]
+            ln_orders = [r[0] for r in valid]
+            max_ratios = [r[1] for r in valid]
+            cycle_counts = [r[2] for r in valid]
+            fixed_ratios = [r[3] for r in valid]
+            short_ratios = [r[4] for r in valid]
 
-        records.append({
-            "N": N,
-            "avg_ln_order": float(np.mean(ln_orders)),
-            "std_ln_order": float(np.std(ln_orders)),
-            "avg_max_cycle_ratio": float(np.mean(max_ratios)),
-            "avg_cycle_count": float(np.mean(cycle_counts)),
-            "avg_fixed_point_ratio": float(np.mean(fixed_ratios)),
-            "avg_short_cycle_ratio": float(np.mean(short_ratios)),
-        })
+            records.append({
+                "N": N,
+                "avg_ln_order": float(np.mean(ln_orders)),
+                "std_ln_order": float(np.std(ln_orders)),
+                "avg_max_cycle_ratio": float(np.mean(max_ratios)),
+                "avg_cycle_count": float(np.mean(cycle_counts)),
+                "avg_fixed_point_ratio": float(np.mean(fixed_ratios)),
+                "avg_short_cycle_ratio": float(np.mean(short_ratios)),
+            })
     return pd.DataFrame(records)
 
 
@@ -167,10 +183,9 @@ def _precision_single(args):
                 xs.append(float(x))
         elif map_func is sine:
             r = Decimal(str(params.get("r", 0.99)))
+            pi = DECIMAL_PI
             for _ in range(n_total):
-                xf = float(x)
-                sin_val = math.sin(xf * math.pi)
-                x = r * Decimal(str(sin_val))
+                x = r * _decimal_sin(x * pi)
                 xs.append(float(x))
         else:
             raise ValueError(f"Decimal unsupported for {map_func}")
