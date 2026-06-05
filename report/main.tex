@@ -479,17 +479,21 @@ Logistic 和 Chebyshev 的 DiffRate 达到 1.000（完全置换差异），
 
 分析发现：
 \begin{itemize}
-  \item float32 精度下，部分种子的置换阶退化为 2 或更小，
-  说明低精度导致混沌轨道周期化严重，无法产生足够长的置换循环。
+  \item 三种精度下 $\mathbb{E}[\ln(\text{order})]$ 处于同一量级，
+  float32 并未出现系统性退化，其均值甚至略高于 float64。
+  这可能是因为 $N\leq 1024$ 时混沌轨道的周期长度仍显著大于置换规模，
+  有限精度舍入未实质影响排序结果的随机性。
   \item float64 和 Decimal(50) 之间的差异较小，
   表明 float64 足以保障循环结构分析的可靠性。
-  \item 实际密码应用中，应避免使用 float32 精度的混沌置乱。
+  \item 在 $N\leq 1024$ 范围内，精度退化效应对置换阶的统计影响有限；
+  对于更大规模的 $N$，需另行验证。
 \end{itemize}
 
 \subsection{E7：排序法偏差分析}
 
 三组对照（Chaos+argsort、Random+argsort、Fisher-Yates）的对比结果如表~\ref{tab:sorting} 所示。
 该实验直接检验：循环结构的特征究竟来自混沌映射本身，还是来自 argsort 操作。
+每组使用 60 组种子（较 E1 的 100 组有所缩减，以平衡多组对照的计算开销）。
 
 \begin{table}[H]
   \centering
