@@ -1,2 +1,9 @@
+# LaTeX auxiliary files
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+
+# Python cache
 __pycache__/
 *.pyc

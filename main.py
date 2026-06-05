@@ -49,7 +49,10 @@ def main():
 
     fy_records = []
     for N in N_LIST:
-        orders = []
+        ln_orders = []
+        max_ratios = []
+        cycle_counts = []
+        fixed_counts = []
         for _ in range(NUM_SEEDS):
             arr = list(range(N))
             for i in range(N - 1, 0, -1):
@@ -58,11 +61,18 @@ def main():
             perm = np.array(arr)
             cycles = cycle_decomposition(perm)
             order = permutation_order(cycles)
-            orders.append(math.log(order) if order > 0 else 0.0)
+            ln_orders.append(math.log(order) if order > 0 else 0.0)
+            max_cycle_len = max(cycles.keys(), default=0)
+            max_ratios.append(max_cycle_len / N if N > 0 else 0.0)
+            cycle_counts.append(sum(cycles.values()))
+            fixed_counts.append(cycles.get(1, 0))
         fy_records.append({
             "N": N,
-            "avg_ln_order": float(np.mean(orders)),
-            "std_ln_order": float(np.std(orders)),
+            "avg_ln_order": float(np.mean(ln_orders)),
+            "std_ln_order": float(np.std(ln_orders)),
+            "avg_max_cycle_ratio": float(np.mean(max_ratios)),
+            "avg_cycle_count": float(np.mean(cycle_counts)),
+            "avg_fixed_point_ratio": float(np.mean(fixed_counts)) / N if N > 0 else 0.0,
         })
 
     fy_df = pd.DataFrame(fy_records)
@@ -98,12 +108,33 @@ def main():
                             os.path.join(FIGURES_DIR, "fig2_cycle_distribution.png"))
 
     print("[4/9] Running seed_avalanche ...")
+    NUM_AVALANCHE = 30
     avalanche_records = []
     for name, (func, params) in MAP_CONFIGS.items():
-        seed = (-0.5, 0.2) if func is henon else 0.3
-        result = seed_avalanche(func, params, 1024, seed)
-        result["mapping"] = name
-        avalanche_records.append(result)
+        diff_rates = []
+        footrules = []
+        while len(diff_rates) < NUM_AVALANCHE:
+            if func is henon:
+                sx = random.uniform(-1.5, 1.5)
+                sy = random.uniform(-0.5, 0.5)
+                seed = (sx, sy)
+            elif func is chebyshev:
+                seed = random.random() * 2.0 - 1.0
+            else:
+                seed = random.random()
+            try:
+                result = seed_avalanche(func, params, 1024, seed)
+                diff_rates.append(result["diff_rate"])
+                footrules.append(result["footrule"])
+            except ValueError:
+                continue
+        avalanche_records.append({
+            "mapping": name,
+            "diff_rate_mean": float(np.mean(diff_rates)),
+            "diff_rate_std": float(np.std(diff_rates)),
+            "footrule_mean": float(np.mean(footrules)),
+            "footrule_std": float(np.std(footrules)),
+        })
     avalanche_df = pd.DataFrame(avalanche_records)
     avalanche_df.to_csv(os.path.join(DATA_DIR, "avalanche.csv"), index=False)
     fig3_seed_avalanche(avalanche_df,
@@ -151,8 +182,8 @@ def main():
 
         av_row = avalanche_df[avalanche_df["mapping"] == name]
         if not av_row.empty:
-            safety_records.append({"mapping": name, "metric": "Q2_DiffRate", "value": av_row.iloc[0]["diff_rate"]})
-            safety_records.append({"mapping": name, "metric": "Q2_Footrule", "value": av_row.iloc[0]["footrule"]})
+            safety_records.append({"mapping": name, "metric": "Q2_DiffRate", "value": av_row.iloc[0]["diff_rate_mean"]})
+            safety_records.append({"mapping": name, "metric": "Q2_Footrule", "value": av_row.iloc[0]["footrule_mean"]})
 
         sub_prec = precision_df[(precision_df["mapping"] == name) & (precision_df["N"] == 256)]
         if not sub_prec.empty:

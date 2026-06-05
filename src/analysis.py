@@ -126,6 +126,9 @@ def logistic_param_scan(N=1024, num_seeds=30, mu_min=3.6, mu_max=4.0, mu_step=0.
 def landau_ln_order(N: np.ndarray) -> np.ndarray:
     return np.sqrt(N * np.log(N) / 2.0)
 
+def erdos_turan_ln_order(N: np.ndarray) -> np.ndarray:
+    return 0.5 * np.log(N) ** 2
+
 
 def golomb_dickman_max_cycle(N: np.ndarray) -> np.ndarray:
     # Golomb-Dickman constant λ ≈ 0.6243.

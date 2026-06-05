@@ -10,7 +10,10 @@ def fig1_avg_ln_order(results: dict, landau_ref, fisher_yates_ref, output_path: 
     fig, ax = plt.subplots(figsize=(8, 5))
     for name, df in results.items():
         ax.plot(df["N"], df["avg_ln_order"], marker="o", label=name)
-    ax.plot(landau_ref["N"], landau_ref["ln_order"], "k--", label="Landau (ref)")
+    ax.plot(landau_ref["N"], landau_ref["ln_order"], "k--", label="Landau (max order)")
+    N_vals = np.array(landau_ref["N"], dtype=float)
+    et_vals = 0.5 * np.log(N_vals) ** 2
+    ax.plot(N_vals, et_vals, "k-.", label="Erdős–Turán (E[ln ord])")
     ax.plot(fisher_yates_ref["N"], fisher_yates_ref["avg_ln_order"], "k:", label="Fisher-Yates")
     ax.set_xscale("log")
     ax.set_xlabel("N")
@@ -50,9 +53,11 @@ def fig2_cycle_distribution(all_perms: dict, N: int, output_path: str):
 def fig3_seed_avalanche(avalanche_df: pd.DataFrame, output_path: str):
     fig, ax1 = plt.subplots(figsize=(8, 5))
     x = np.arange(len(avalanche_df))
-    ax1.bar(x - 0.2, avalanche_df["diff_rate"], 0.4, label="DiffRate", color="steelblue")
+    ax1.bar(x - 0.2, avalanche_df["diff_rate_mean"], 0.4, yerr=avalanche_df["diff_rate_std"],
+            capsize=3, label="DiffRate", color="steelblue")
     ax2 = ax1.twinx()
-    ax2.bar(x + 0.2, avalanche_df["footrule"], 0.4, label="Footrule", color="coral")
+    ax2.bar(x + 0.2, avalanche_df["footrule_mean"], 0.4, yerr=avalanche_df["footrule_std"],
+            capsize=3, label="Footrule", color="coral")
     ax1.set_xticks(x)
     ax1.set_xticklabels(avalanche_df["mapping"], rotation=30)
     ax1.set_ylabel("DiffRate")
